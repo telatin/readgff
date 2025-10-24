@@ -6,6 +6,7 @@ examples/nimcache/
 # Compiled binaries
 tests/test_readgff
 examples/basic_usage
+examples/advanced_usage
 *.out
 *.exe
 
