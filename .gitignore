@@ -1,0 +1,29 @@
+# Nim build artifacts
+nimcache/
+tests/nimcache/
+examples/nimcache/
+
+# Compiled binaries
+tests/test_readgff
+examples/basic_usage
+examples/advanced_usage
+*.out
+*.exe
+
+# Nimble
+nimbledeps/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files
+/tmp/
+*.tmp
