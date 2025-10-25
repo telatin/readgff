@@ -116,7 +116,11 @@ iterator readGff*(filename: string): GffRecord =
   for line in f.lines:
     lineNum.inc
     let trimmed = line.strip()
-    
+
+    # Stop parsing if the FASTA section is reached
+    if trimmed == "##FASTA":
+      break
+
     # Skip empty lines and comments
     if trimmed.len == 0 or trimmed.startsWith("#"):
       continue
@@ -143,7 +147,11 @@ iterator readGff*(f: File): GffRecord =
   for line in f.lines:
     lineNum.inc
     let trimmed = line.strip()
-    
+
+    # Stop parsing if the FASTA section is reached
+    if trimmed == "##FASTA":
+      break
+
     # Skip empty lines and comments
     if trimmed.len == 0 or trimmed.startsWith("#"):
       continue
