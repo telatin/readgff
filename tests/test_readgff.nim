@@ -4,6 +4,11 @@ import tables
 import os
 import strutils
 
+proc collectRecords(path: string): seq[GffRecord] =
+  result = @[]
+  for record in readGff(path):
+    result.add(record)
+
 suite "GFF parsing tests":
   
   setup:
@@ -145,3 +150,31 @@ suite "GFF error handling":
     expect IOError:
       for record in readGff("/tmp/nonexistent_file_xyz.gff"):
         discard
+
+suite "GFF fixture integration tests":
+
+  const fixturesDir = "tests/files"
+
+  test "handles empty example fixture":
+    let records = collectRecords(joinPath(fixturesDir, "example.gff"))
+    check records.len == 0
+
+  test "parses vista fixture correctly":
+    let records = collectRecords(joinPath(fixturesDir, "vista.gff"))
+    check records.len == 6
+    if records.len > 0:
+      check records[0].featureType == "CDS"
+
+  test "parses genes fixture correctly":
+    let records = collectRecords(joinPath(fixturesDir, "genes.gff"))
+    check records.len == 395
+    if records.len > 0:
+      check records[0].seqid == "chr01"
+      check records[0].getAttribute("ID") == "YAL069W"
+
+  test "ignores FASTA section in prokka fixture":
+    let records = collectRecords(joinPath(fixturesDir, "prokka.gff"))
+    check records.len == 8
+    if records.len > 0:
+      check records[^1].seqid == "NODE_1_length_29600_cov_2807.600820"
+      check records[^1].getAttribute("ID") == "gene8"
