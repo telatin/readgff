@@ -104,7 +104,34 @@ chr3	test	region	100	200	.	.	.	.
         check str.contains("gene")
         first = false
         break
-  
+
+  test "loadGff stores dataset and indexes":
+    let dataset = loadGff("/tmp/test_gff.gff")
+    check dataset.records.len == 5
+    let chr1Records = dataset.getRecordsBySeqid("chr1")
+    check chr1Records.len == 3
+    let geneRecords = dataset.getRecordsByFeatureType("gene")
+    check geneRecords.len == 1
+    if geneRecords.len == 1:
+      check geneRecords[0].getAttribute("ID") == "gene1"
+
+  test "loadGff filters by seqid and feature type":
+    let chr2Only = loadGff("/tmp/test_gff.gff", seqids = ["chr2"])
+    check chr2Only.records.len == 1
+    if chr2Only.records.len == 1:
+      check chr2Only.records[0].seqid == "chr2"
+
+    let genesOnly = loadGff("/tmp/test_gff.gff", featureTypes = ["gene"])
+    check genesOnly.records.len == 1
+    if genesOnly.records.len == 1:
+      check genesOnly.records[0].featureType == "gene"
+
+    let chr1Genes = loadGff("/tmp/test_gff.gff", seqids = ["chr1"], featureTypes = ["gene"])
+    check chr1Genes.records.len == 1
+    if chr1Genes.records.len == 1:
+      check chr1Genes.records[0].seqid == "chr1"
+      check chr1Genes.records[0].featureType == "gene"
+
   test "skips comment lines":
     # The test file has 2 comment lines, but we should only get 5 records
     var count = 0
