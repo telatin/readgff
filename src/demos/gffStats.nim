@@ -5,7 +5,7 @@ import sequtils
 import algorithm
 import strformat
 
-import readgff
+import ../readgff
 
 type
   TypeStats = tuple

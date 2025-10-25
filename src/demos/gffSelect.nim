@@ -3,7 +3,7 @@ import os
 import strformat
 import strutils
 
-import readgff
+import ../readgff
 
 proc intervalLength(startPos, endPos: int): int =
   ## Calculate the length of a GFF interval (inclusive coordinates).
