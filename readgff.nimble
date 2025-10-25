@@ -8,6 +8,8 @@ srcDir        = "src"
 
 bin           = @["demos/gffStats", "demos/gffSelect"]
 
+switch("path", "src")
+
 # Dependencies
 
 requires "nim >= 1.6.0", "argparse"
