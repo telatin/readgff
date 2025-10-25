@@ -13,6 +13,7 @@
 
 import strutils
 import tables
+import sets
 
 type
   GffRecord* = object
@@ -27,6 +28,12 @@ type
     phase*: char        ## Phase (0, 1, 2, or '.', column 8)
     attributes*: string ## Raw attributes string (column 9)
     
+  GffDataset* = ref object
+    ## Stores the content of a GFF file with fast lookup indexes
+    records*: seq[GffRecord]
+    bySeqid*: Table[string, seq[int]]
+    byFeatureType*: Table[string, seq[int]]
+
   GffError* = object of CatchableError
     ## Error type for GFF parsing errors
 
@@ -174,3 +181,78 @@ proc `$`*(record: GffRecord): string =
     $record.phase,
     record.attributes
   ].join("\t")
+
+proc getRecordsBySeqid*(dataset: GffDataset, seqid: string): seq[GffRecord] =
+  ## Retrieve all records associated with a given sequence identifier.
+  if dataset.isNil:
+    return @[]
+  if not dataset.bySeqid.hasKey(seqid):
+    return @[]
+  result = @[]
+  for idx in dataset.bySeqid[seqid]:
+    result.add(dataset.records[idx])
+
+proc getRecordsByFeatureType*(dataset: GffDataset, featureType: string): seq[GffRecord] =
+  ## Retrieve all records associated with a given feature type.
+  if dataset.isNil:
+    return @[]
+  if not dataset.byFeatureType.hasKey(featureType):
+    return @[]
+  result = @[]
+  for idx in dataset.byFeatureType[featureType]:
+    result.add(dataset.records[idx])
+
+proc loadGff*(filename: string; seqids: openArray[string] = []; featureTypes: openArray[string] = []): GffDataset =
+  ## Load an entire GFF file into memory with optional filtering.
+  ## When seqids or featureTypes are provided, only records that match
+  ## the supplied filters are stored in the resulting dataset.
+  var f: File
+  if not open(f, filename):
+    raise newException(IOError, "Cannot open file: " & filename)
+
+  defer: f.close()
+
+  new(result)
+  result.records = @[]
+  result.bySeqid = initTable[string, seq[int]]()
+  result.byFeatureType = initTable[string, seq[int]]()
+
+  let useSeqidFilter = seqids.len > 0
+  let useFeatureFilter = featureTypes.len > 0
+
+  var seqidFilter = initHashSet[string]()
+  if useSeqidFilter:
+    for id in seqids:
+      seqidFilter.incl(id)
+
+  var featureFilter = initHashSet[string]()
+  if useFeatureFilter:
+    for ft in featureTypes:
+      featureFilter.incl(ft)
+
+  var lineNum = 0
+  for line in f.lines:
+    lineNum.inc
+    let trimmed = line.strip()
+
+    if trimmed == "##FASTA":
+      break
+
+    if trimmed.len == 0 or trimmed.startsWith("#"):
+      continue
+
+    var record: GffRecord
+    try:
+      record = parseLine(trimmed)
+    except GffError as e:
+      raise newException(GffError, "Error at line " & $lineNum & ": " & e.msg)
+
+    if useSeqidFilter and not seqidFilter.contains(record.seqid):
+      continue
+    if useFeatureFilter and not featureFilter.contains(record.featureType):
+      continue
+
+    let idx = result.records.len
+    result.records.add(record)
+    result.bySeqid.mgetOrPut(record.seqid, @[]).add(idx)
+    result.byFeatureType.mgetOrPut(record.featureType, @[]).add(idx)
